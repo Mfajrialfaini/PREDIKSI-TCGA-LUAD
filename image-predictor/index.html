@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Deteksi LUAD — Sistem Analisis Histopatologi TCGA-LUAD</title>
+  <meta name="description" content="Sistem deteksi mutasi gen pada slide histopatologi kanker paru-paru adenokarsinoma (TCGA-LUAD) berbasis Deep Learning Swin-Transformer." />
+
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ===== TOP CLINICAL NOTICE BAR ===== -->
+  <header class="top-notice-bar">
+    <div class="container-xl d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge-research">Riset &amp; Pengembangan</span>
+        <span class="notice-text">
+          Model Swin-Transformer aktif untuk analisis mutasi gen histopatologi TCGA-LUAD. Bukan pengganti diagnosis klinis resmi.
+        </span>
+      </div>
+      <div class="d-flex align-items-center gap-3">
+        <span class="system-time text-muted d-none d-md-inline" id="topNavTime"></span>
+        <button class="btn-close-notice" onclick="document.querySelector('.top-notice-bar').style.display='none'" aria-label="Tutup Pengumuman">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== NAVIGATION BAR ===== -->
+  <nav class="navbar navbar-expand-lg navbar-med sticky-top" id="mainNav">
+    <div class="container-xl">
+      <!-- Brand Logo -->
+      <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+        <div class="brand-symbol">
+          <i class="bi bi-lungs-fill"></i>
+        </div>
+        <div>
+          <div class="brand-title">Deteksi <span class="brand-highlight">LUAD</span></div>
+          <div class="brand-subtitle">Patologi Digital &amp; AI Molekuler</div>
+        </div>
+      </a>
+
+      <!-- Mobile Toggle -->
+      <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu" aria-label="Toggle navigation">
+        <i class="bi bi-list fs-4 text-slate"></i>
+      </button>
+
+      <!-- Nav Links -->
+      <div class="collapse navbar-collapse" id="navMenu">
+        <ul class="navbar-nav mx-auto gap-lg-1">
+          <li class="nav-item"><a class="nav-link nav-link-custom" href="#overview">Ikhtisar</a></li>
+          <li class="nav-item"><a class="nav-link nav-link-custom active" href="#predictor">Analisis Spesimen</a></li>
+          <li class="nav-item"><a class="nav-link nav-link-custom" href="#how-it-works">Alur Kerja</a></li>
+          <li class="nav-item"><a class="nav-link nav-link-custom" href="#classes">Kategori Gen</a></li>
+        </ul>
+
+        <div class="d-flex align-items-center gap-3">
+          <div class="live-status-pill">
+            <span class="status-indicator"></span>
+            <span class="status-text">Server AI Siap</span>
+          </div>
+          <a href="#predictor" class="btn btn-primary-med">
+            <i class="bi bi-microscope me-1"></i> Mulai Analisis
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ===== HERO / INTRO SECTION ===== -->
+  <section class="hero-section" id="overview">
+    <div class="container-xl">
+      <div class="row align-items-center g-4 g-lg-5">
+        
+        <div class="col-lg-7">
+          <div class="hero-badge">
+            <i class="bi bi-shield-check me-1"></i> Onkologi Paru &bull; TCGA-LUAD Clinical AI
+          </div>
+          <h1 class="hero-headline">
+            Deteksi <span class="text-gradient">LUAD</span>
+          </h1>
+          <p class="hero-subheading">
+            Platform komputasi histopatologi cerdas untuk identifikasi status mutasi genetik (<em>Mutant</em> vs <em>Wildtype</em>) pada karsinoma adenokarsinoma paru-paru berbasis model visi <strong>Swin-Transformer</strong>.
+          </p>
+
+          <!-- Core Clinical Highlights -->
+          <div class="hero-features-grid">
+            <div class="hf-item">
+              <div class="hf-icon"><i class="bi bi-layers-fill"></i></div>
+              <div>
+                <div class="hf-label">Dukungan Input</div>
+                <div class="hf-val">Patch 224&times;224 &amp; WSI</div>
+              </div>
+            </div>
+            <div class="hf-item">
+              <div class="hf-icon"><i class="bi bi-cpu-fill"></i></div>
+              <div>
+                <div class="hf-label">Arsitektur AI</div>
+                <div class="hf-val">Swin-Transformer Vision</div>
+              </div>
+            </div>
+            <div class="hf-item">
+              <div class="hf-icon"><i class="bi bi-database-check"></i></div>
+              <div>
+                <div class="hf-label">Dataset Referensi</div>
+                <div class="hf-val">TCGA-LUAD Patologi</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex gap-3 mt-4 flex-wrap">
+            <a href="#predictor" class="btn btn-primary-med btn-lg">
+              <i class="bi bi-upload me-2"></i> Periksa Spesimen Sekarang
+            </a>
+            <a href="#how-it-works" class="btn btn-secondary-med btn-lg">
+              <i class="bi bi-journal-medical me-2"></i> Panduan Prosedur
+            </a>
+          </div>
+        </div>
+
+        <!-- Right Side: Clean Medical Overview Card -->
+        <div class="col-lg-5">
+          <div class="clinical-glance-card">
+            <div class="cgc-header">
+              <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-clipboard2-pulse-fill text-primary-cyan"></i>
+                <span class="cgc-title">Spesifikasi Diagnostik</span>
+              </div>
+              <span class="cgc-tag">Versi 2.4</span>
+            </div>
+
+            <div class="cgc-body">
+              <div class="cgc-metric">
+                <div class="cgc-metric-title">Klasifikasi Target</div>
+                <div class="cgc-metric-tags">
+                  <span class="badge-med-mutant"><i class="bi bi-virus2 me-1"></i>Mutant (KRAS/TP53)</span>
+                  <span class="badge-med-wildtype"><i class="bi bi-check-circle-fill me-1"></i>Wildtype (Normal)</span>
+                </div>
+              </div>
+
+              <div class="cgc-divider"></div>
+
+              <div class="cgc-row">
+                <span class="cgc-label"><i class="bi bi-image me-2 text-muted"></i>Pewarnaan Jaringan</span>
+                <span class="cgc-value">Hematoxylin &amp; Eosin (H&amp;E)</span>
+              </div>
+              <div class="cgc-row">
+                <span class="cgc-label"><i class="bi bi-bounding-box me-2 text-muted"></i>Resolusi Standar</span>
+                <span class="cgc-value">224 &times; 224 pixels (1.0 &micro;m/px)</span>
+              </div>
+              <div class="cgc-row">
+                <span class="cgc-label"><i class="bi bi-speedometer2 me-2 text-muted"></i>Kecepatan Inferensi</span>
+                <span class="cgc-value">&sim; 0.8 &ndash; 1.8 detik</span>
+              </div>
+              <div class="cgc-row">
+                <span class="cgc-label"><i class="bi bi-shield-lock me-2 text-muted"></i>Integritas Data</span>
+                <span class="cgc-value text-success"><i class="bi bi-check2-circle me-1"></i>Privasi Aman</span>
+              </div>
+            </div>
+
+            <div class="cgc-footer">
+              <i class="bi bi-info-circle me-1 text-primary-cyan"></i>
+              <span>Dioptimalkan khusus untuk jaringan paru adenokarsinoma (TCGA-LUAD).</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== MAIN ANALYSIS WORKSPACE ===== -->
+  <section class="analysis-section" id="predictor">
+    <div class="container-xl">
+
+      <!-- Section Title & Requisition Bar -->
+      <div class="section-title-wrap mb-4">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+          <div>
+            <div class="section-kicker"><i class="bi bi-activity me-1"></i> Ruang Kerja Analisis</div>
+            <h2 class="section-heading mb-1">Pemeriksaan Spesimen Histopatologi</h2>
+            <p class="section-sub mb-0">Upload citra mikroskopis slide jaringan paru untuk memulai pemindaian otomatis.</p>
+          </div>
+          <div class="requisition-box">
+            <div class="req-id-line">
+              <span class="req-label">No. Analisis:</span>
+              <span class="req-id" id="analysisId">ANLS-INIT</span>
+            </div>
+            <div class="req-date-line">
+              <i class="bi bi-clock me-1 text-muted"></i><span id="analysisDate">--</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-4">
+
+        <!-- ================= LEFT COLUMN: SPECIMEN INPUT ================= -->
+        <div class="col-lg-5">
+
+          <!-- 1. Specimen & Patient Metadata Card -->
+          <div class="panel-card mb-3">
+            <div class="panel-header">
+              <div class="d-flex align-items-center gap-2">
+                <span class="panel-step-badge">1</span>
+                <span class="panel-title">Data Spesimen</span>
+              </div>
+              <span class="badge-optional">Opsional</span>
+            </div>
+            <div class="panel-body">
+              <div class="row g-2">
+                <div class="col-sm-6">
+                  <label class="form-label-med" for="sampleId">ID Sampel / Pasien</label>
+                  <input type="text" class="form-control-med" id="sampleId" placeholder="Contoh: TCGA-44-6775" />
+                </div>
+                <div class="col-sm-6">
+                  <label class="form-label-med" for="specimenType">Preparat Biopsi</label>
+                  <select class="form-control-med" id="specimenType">
+                    <option value="H&E Patch">Slide H&amp;E Patch (Standar)</option>
+                    <option value="Whole Slide Image">Whole Slide Image (WSI)</option>
+                    <option value="Tissue Microarray">Tissue Microarray (TMA)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Specimen Upload Card -->
+          <div class="panel-card mb-3">
+            <div class="panel-header">
+              <div class="d-flex align-items-center gap-2">
+                <span class="panel-step-badge">2</span>
+                <span class="panel-title">Upload Citra Slide</span>
+              </div>
+
+              <!-- Mode Segmented Control -->
+              <div class="mode-segmented" role="tablist">
+                <button class="mode-tab-btn active" id="btnPatch" onclick="switchMode('patch')" type="button">
+                  <i class="bi bi-grid-3x3 me-1"></i>Patch Citra
+                </button>
+                <button class="mode-tab-btn" id="btnWSI" onclick="switchMode('wsi')" type="button">
+                  <i class="bi bi-file-earmark-medical me-1"></i>WSI Slide
+                </button>
+              </div>
+            </div>
+
+            <div class="panel-body">
+
+              <!-- PATCH MODE -->
+              <div id="patchPanel">
+                <div class="dropzone-med" id="uploadZonePatch"
+                     ondragover="handleDragOver(event,'patch')"
+                     ondragleave="handleDragLeave(event,'patch')"
+                     ondrop="handleDrop(event,'patch')"
+                     onclick="document.getElementById('fileInputPatch').click()">
+                  
+                  <div id="patchPlaceholder" class="dropzone-content">
+                    <div class="dropzone-icon">
+                      <i class="bi bi-cloud-arrow-up"></i>
+                    </div>
+                    <div class="dropzone-title">Tarik &amp; lepas citra patch di sini</div>
+                    <div class="dropzone-subtitle">atau <span class="text-primary-cyan text-decoration-underline">pilih dari perangkat Anda</span></div>
+                    <div class="dropzone-formats">Format didukung: PNG, JPG, JPEG, TIFF (224&times;224 px)</div>
+                  </div>
+
+                  <div id="patchPreviewWrap" class="preview-container d-none">
+                    <img id="previewImgPatch" src="" alt="Patch Preview" class="preview-thumbnail" />
+                    <div class="preview-overlay-info">
+                      <i class="bi bi-zoom-in"></i> Pratinjau Citra
+                    </div>
+                  </div>
+
+                  <input type="file" id="fileInputPatch" class="d-none" accept="image/*" onchange="handleFileSelect(event,'patch')" />
+                </div>
+
+                <!-- Slide Metadata Status Strip -->
+                <div class="file-status-strip d-none mt-2" id="patchInfo">
+                  <div class="fss-left">
+                    <i class="bi bi-image text-primary-cyan fss-icon"></i>
+                    <span id="patchFileName" class="fss-filename">patch_specimen.png</span>
+                  </div>
+                  <div class="fss-right">
+                    <span class="fss-pill"><i class="bi bi-aspect-ratio me-1"></i><span id="patchDim">-</span></span>
+                    <span class="fss-pill"><i class="bi bi-hdd me-1"></i><span id="patchSize">-</span></span>
+                    <span class="fss-pill pill-valid" id="patchValidChip"><i class="bi bi-question me-1"></i>Validasi...</span>
+                    <button class="btn-remove-file" onclick="resetMode('patch')" title="Hapus spesimen" type="button">
+                      <i class="bi bi-trash3"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Patch Dimensions Adjuster -->
+                <div class="param-accordion mt-3">
+                  <div class="param-header-clean">
+                    <i class="bi bi-sliders2 me-1 text-primary-cyan"></i>
+                    <span>Parameter Geometri Patch</span>
+                  </div>
+                  <div class="row g-2 align-items-center mt-1">
+                    <div class="col-5">
+                      <div class="input-group-compact">
+                        <span class="ig-label">W</span>
+                        <input type="number" class="form-control-compact" id="patchW" value="224" min="32" max="1024" />
+                        <span class="ig-unit">px</span>
+                      </div>
+                    </div>
+                    <div class="col-2 text-center text-muted">&times;</div>
+                    <div class="col-5">
+                      <div class="input-group-compact">
+                        <span class="ig-label">H</span>
+                        <input type="number" class="form-control-compact" id="patchH" value="224" min="32" max="1024" />
+                        <span class="ig-unit">px</span>
+                      </div>
+                    </div>
+                    <div class="col-12 mt-2">
+                      <div class="form-check form-check-inline m-0">
+                        <input class="form-check-input med-check" type="checkbox" id="lockAspect" checked />
+                        <label class="form-check-label check-label-sm" for="lockAspect">
+                          Kunci Rasio Persegi 1:1 (Standar Swin-Transformer)
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div><!-- /patchPanel -->
+
+              <!-- WSI MODE -->
+              <div id="wsiPanel" class="d-none">
+                <div class="wsi-info-alert mb-3">
+                  <i class="bi bi-info-circle-fill text-primary-cyan me-2 flex-shrink-0"></i>
+                  <div>
+                    <strong>Whole Slide Image (WSI):</strong> Slide beresolusi tinggi akan secara otomatis ditile menjadi patch 224&times;224 px oleh pipa inferensi.
+                  </div>
+                </div>
+
+                <div class="dropzone-med dropzone-wsi" id="uploadZoneWSI"
+                     ondragover="handleDragOver(event,'wsi')"
+                     ondragleave="handleDragLeave(event,'wsi')"
+                     ondrop="handleDrop(event,'wsi')"
+                     onclick="document.getElementById('fileInputWSI').click()">
+                  
+                  <div id="wsiPlaceholder" class="dropzone-content">
+                    <div class="dropzone-icon text-teal">
+                      <i class="bi bi-file-earmark-medical"></i>
+                    </div>
+                    <div class="dropzone-title">Upload File Whole Slide Image</div>
+                    <div class="dropzone-subtitle">Mendukung slide mikroskopi resolusi penuh</div>
+                    <div class="wsi-format-badges mt-2">
+                      <span>.SVS</span><span>.TIFF</span><span>.NDPI</span><span>.SCN</span><span>.MRXS</span>
+                    </div>
+                  </div>
+
+                  <div id="wsiPreviewWrap" class="preview-container d-none text-center py-3">
+                    <i class="bi bi-file-earmark-medical-fill fs-1 text-teal"></i>
+                    <div id="wsiFileName" class="fw-semibold mt-2 text-slate">slide.svs</div>
+                    <div id="wsiFileSize" class="text-muted small">0 MB</div>
+                  </div>
+
+                  <input type="file" id="fileInputWSI" class="d-none"
+                         accept=".svs,.tiff,.tif,.ndpi,.scn,.mrxs,.jpg,.jpeg,.png"
+                         onchange="handleFileSelect(event,'wsi')" />
+                </div>
+
+                <div class="file-status-strip d-none mt-2" id="wsiInfo">
+                  <div class="fss-left">
+                    <i class="bi bi-file-earmark-medical text-teal fss-icon"></i>
+                    <span id="wsiInfoName" class="fss-filename">slide.svs</span>
+                  </div>
+                  <div class="fss-right">
+                    <span class="fss-pill pill-teal"><i class="bi bi-hdd me-1"></i><span id="wsiInfoSize">-</span></span>
+                    <button class="btn-remove-file" onclick="resetMode('wsi')" title="Hapus spesimen" type="button">
+                      <i class="bi bi-trash3"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="param-accordion mt-3">
+                  <div class="param-header-clean">
+                    <i class="bi bi-sliders2 me-1 text-teal"></i>
+                    <span>Tiling WSI &amp; Stride</span>
+                  </div>
+                  <div class="row g-2 align-items-center mt-1">
+                    <div class="col-6">
+                      <label class="form-label-med">Ukuran Tile</label>
+                      <input type="number" class="form-control-compact w-100" id="wsiPatchW" value="224" />
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label-med">Stride</label>
+                      <input type="range" class="form-range-med w-100" id="wsiStride" min="32" max="256" step="32" value="224"
+                             oninput="updateStrideLabel(this.value,'wsiStrideVal')" />
+                      <div class="d-flex justify-content-between text-muted" style="font-size: 0.72rem;">
+                        <span>32px</span>
+                        <span class="fw-semibold text-primary-cyan" id="wsiStrideVal">224px</span>
+                        <span>256px</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div><!-- /wsiPanel -->
+
+            </div>
+          </div>
+
+          <!-- 3. Model Engine Selection Card -->
+          <div class="panel-card mb-3">
+            <div class="panel-header">
+              <div class="d-flex align-items-center gap-2">
+                <span class="panel-step-badge">3</span>
+                <span class="panel-title">Model Inferensi</span>
+              </div>
+              <span class="badge-active-model"><i class="bi bi-check2 me-1"></i>Aktif</span>
+            </div>
+            <div class="panel-body">
+              <div class="model-item model-item-selected" id="model-swin" onclick="selectModel(this,'swin')">
+                <div class="model-radio"><i class="bi bi-check-circle-fill"></i></div>
+                <div class="model-info">
+                  <div class="model-title">Swin-Transformer (Patch &amp; WSI)</div>
+                  <div class="model-desc">Hierarchical Vision Transformer &bull; Dilatih pada TCGA-LUAD</div>
+                </div>
+                <span class="model-tag-primary">Produksi</span>
+              </div>
+
+              <div class="model-item model-item-disabled" title="Model sedang dalam validasi">
+                <div class="model-radio"><i class="bi bi-lock-fill"></i></div>
+                <div class="model-info">
+                  <div class="model-title">ResNet-50 / EfficientNet-B4</div>
+                  <div class="model-desc">CNN Baseline &bull; Dalam tahap pengujian</div>
+                </div>
+                <span class="model-tag-muted">Tahap Uji</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. Action Button -->
+          <button class="btn btn-execute-analysis w-100" id="predictBtn" onclick="startPrediction()" disabled>
+            <i class="bi bi-play-circle-fill me-2"></i> Jalankan Analisis Deteksi LUAD
+          </button>
+
+          <div class="clinical-disclaimer-strip mt-3">
+            <i class="bi bi-shield-exclamation text-amber flex-shrink-0"></i>
+            <span>Sistem bantuan keputusan klinis berbasis AI untuk keperluan riset histopatologi.</span>
+          </div>
+
+        </div>
+
+        <!-- ================= RIGHT COLUMN: DIAGNOSTIC REPORT ================= -->
+        <div class="col-lg-7">
+          <div class="panel-card h-100 d-flex flex-column">
+
+            <!-- Result Card Header -->
+            <div class="panel-header result-panel-header">
+              <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-file-earmark-medical-fill text-primary-cyan fs-5"></i>
+                <div>
+                  <span class="panel-title">Laporan Hasil Deteksi LUAD</span>
+                  <div class="text-muted" style="font-size: 0.75rem;">Digital Pathology AI Diagnostic Report</div>
+                </div>
+              </div>
+
+              <div class="sys-status-badge" id="statusBadge">
+                <span class="sys-dot sys-idle"></span>
+                <span class="sys-label">Menunggu Spesimen</span>
+              </div>
+            </div>
+
+            <!-- Report Meta Strip -->
+            <div class="report-meta-strip" id="reportMetaStrip">
+              <div class="rms-col">
+                <span class="rms-k">ID Spesimen:</span>
+                <span class="rms-v fw-semibold" id="rmsId">&mdash;</span>
+              </div>
+              <div class="rms-divider"></div>
+              <div class="rms-col">
+                <span class="rms-k">Model:</span>
+                <span class="rms-v">Swin-Transformer</span>
+              </div>
+              <div class="rms-divider"></div>
+              <div class="rms-col">
+                <span class="rms-k">Tanggal:</span>
+                <span class="rms-v" id="rmsDate">&mdash;</span>
+              </div>
+            </div>
+
+            <!-- Result Panel Inner Container -->
+            <div class="panel-body result-panel-body flex-grow-1">
+
+              <!-- ── A. EMPTY STATE ── -->
+              <div class="result-state" id="emptyState">
+                <div class="empty-state-content">
+                  <div class="empty-illustration">
+                    <i class="bi bi-microscope"></i>
+                  </div>
+                  <h3 class="empty-title">Belum Ada Analisis Berjalan</h3>
+                  <p class="empty-text">
+                    Silakan upload citra patch histopatologi atau Whole Slide Image (WSI) pada panel kiri, kemudian klik <strong>Jalankan Analisis Deteksi LUAD</strong> untuk memulai prediksi.
+                  </p>
+                  
+                  <div class="empty-guide-pills">
+                    <div class="eg-pill"><span class="dot-mutant"></span> Mutant (KRAS/TP53)</div>
+                    <div class="eg-pill"><span class="dot-wildtype"></span> Wildtype (Normal)</div>
+                    <div class="eg-pill"><span class="dot-invalid"></span> Non TCGA-LUAD</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ── B. SCANNING / LOADING STATE ── -->
+              <div class="result-state d-none" id="loadingState">
+                <div class="loading-state-content">
+                  
+                  <div class="scanner-circle-wrap">
+                    <div class="scanner-ring"></div>
+                    <div class="scanner-ring-inner"></div>
+                    <i class="bi bi-cpu-fill scanner-center-icon"></i>
+                  </div>
+
+                  <h4 class="loading-title" id="loadingTitle">Memproses Citra Histopatologi...</h4>
+                  <p class="text-muted small mb-4">Menganalisis arsitektur seluler &amp; pola pewarnaan H&amp;E menggunakan Swin-Transformer</p>
+
+                  <div class="pipeline-steps">
+                    <div class="pipeline-item" id="step1">
+                      <div class="pipeline-marker">1</div>
+                      <div class="pipeline-label">Normalisasi &amp; Preprocessing Citra Jaringan</div>
+                    </div>
+                    <div class="pipeline-item" id="step2">
+                      <div class="pipeline-marker">2</div>
+                      <div class="pipeline-label">Pemeriksaan Integritas Karakteristik TCGA-LUAD</div>
+                    </div>
+                    <div class="pipeline-item" id="step3">
+                      <div class="pipeline-marker">3</div>
+                      <div class="pipeline-label">Ekstraksi Fitur &amp; Inferensi Swin-Transformer</div>
+                    </div>
+                    <div class="pipeline-item" id="step4">
+                      <div class="pipeline-marker">4</div>
+                      <div class="pipeline-label">Kalkulasi Skor Probabilitas &amp; Penyusunan Laporan</div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              <!-- ── C. RESULT: MUTANT ── -->
+              <div class="result-state d-none" id="resultMutant">
+                
+                <!-- Verdict Header Box -->
+                <div class="verdict-banner verdict-mutant">
+                  <div class="verdict-left">
+                    <div class="verdict-kicker text-red">HASIL DETEKSI HISTOPATOLOGI</div>
+                    <h2 class="verdict-title text-red">
+                      <i class="bi bi-virus2 me-2"></i>MUTANT
+                    </h2>
+                    <p class="verdict-desc">
+                      Pola morfologi jaringan konsisten dengan mutasi genetik (KRAS / TP53) pada adenokarsinoma paru (TCGA-LUAD).
+                    </p>
+                  </div>
+                  <div class="verdict-stamp stamp-mutant">
+                    <div class="stamp-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                    <div class="stamp-text">MUTASI POSITIF</div>
+                  </div>
+                </div>
+
+                <!-- Confidence Gauge -->
+                <div class="confidence-box mt-3">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="conf-box-title"><i class="bi bi-bar-chart-fill me-1 text-primary-cyan"></i> Skor Probabilitas Model</span>
+                    <span class="badge-confidence">Tingkat Keyakinan Tinggi</span>
+                  </div>
+
+                  <div class="conf-metric-row">
+                    <div class="conf-label-col">
+                      <span class="conf-name text-red"><i class="bi bi-virus2 me-1"></i>Mutant</span>
+                    </div>
+                    <div class="conf-bar-col">
+                      <div class="progress-track">
+                        <div class="progress-bar-fill fill-mutant" id="mutantBar" style="width: 0%;"></div>
+                      </div>
+                    </div>
+                    <div class="conf-value-col text-red" id="mutantConfPct">0%</div>
+                  </div>
+
+                  <div class="conf-metric-row">
+                    <div class="conf-label-col">
+                      <span class="conf-name text-green"><i class="bi bi-check-circle me-1"></i>Wildtype</span>
+                    </div>
+                    <div class="conf-bar-col">
+                      <div class="progress-track">
+                        <div class="progress-bar-fill fill-wildtype" id="mutantWtBar" style="width: 0%;"></div>
+                      </div>
+                    </div>
+                    <div class="conf-value-col text-green" id="mutantWtPct">0%</div>
+                  </div>
+                </div>
+
+                <!-- Specimen Technical Table -->
+                <div class="details-table mt-3">
+                  <div class="dt-row">
+                    <span class="dt-key">Arsitektur Model</span>
+                    <span class="dt-val">Swin-Transformer (Hierarchical Vision)</span>
+                  </div>
+                  <div class="dt-row">
+                    <span class="dt-key">Format Masukan</span>
+                    <span class="dt-val" id="mutantMode">&mdash;</span>
+                  </div>
+                  <div class="dt-row">
+                    <span class="dt-key">Waktu Komputasi</span>
+                    <span class="dt-val font-mono" id="mutantTime">&mdash;</span>
+                  </div>
+                  <div class="dt-row">
+                    <span class="dt-key">Referensi Standar</span>
+                    <span class="dt-val">The Cancer Genome Atlas (TCGA-LUAD)</span>
+                  </div>
+                  <div class="dt-row">
+                    <span class="dt-key">Waktu Pengujian</span>
+                    <span class="dt-val font-mono" id="mutantDate">&mdash;</span>
+                  </div>
+                </div>
+
+                <!-- Action Toolbar -->
+                <div class="result-actions-row mt-4">
+                  <button class="btn btn-outline-med flex-fill" onclick="downloadResult('mutant')" type="button">
+                    <i class="bi bi-download me-1"></i> Unduh Laporan (.TXT)
+                  </button>
+                  <button class="btn btn-primary-med flex-fill" onclick="resetAll()" type="button">
+                    <i class="bi bi-plus-lg me-1"></i> Analisis Baru
+                  </button>
+                </div>
+
+                <div class="clinical-note-box mt-3">
+                  <i class="bi bi-shield-fill-exclamation text-amber me-2"></i>
+                  <span><strong>Catatan Medis:</strong> Hasil interpretasi AI ini ditujukan untuk konfirmasi riset patologi dan memerlukan verifikasi oleh dokter spesialis patologi anatomi.</span>
+                </div>
+
+              </div><!-- /resultMutant -->
+
+              <!-- ── D. RESULT: WILDTYPE ── -->
+              <div class="result-state d-none" id="resultWildtype">
+                
+                <div class="verdict-banner verdict-wildtype">
+                  <div class="verdict-left">
+                    <div class="verdict-kicker text-green">HASIL DETEKSI HISTOPATOLOGI</div>
+                    <h2 class="verdict-title text-green">
+                      <i class="bi bi-check-circle-fill me-2"></i>WILDTYPE
+                    </h2>
+                    <p class="verdict-desc">
+                      Tidak ditemukan penanda morfologi mutasi &mdash; genetik sel berada dalam profil alami / non-mutan pada TCGA-LUAD.
+                    </p>
+                  </div>
+                  <div class="verdict-stamp stamp-wildtype">
+                    <div class="stamp-icon"><i class="bi bi-shield-check"></i></div>
+                    <div class="stamp-text">WILDTYPE</div>
+                  </div>
+                </div>
+
+                <div class="confidence-box mt-3">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="conf-box-title"><i class="bi bi-bar-chart-fill me-1 text-primary-cyan"></i> Skor Probabilitas Model</span>
+                    <span class="badge-confidence">Tingkat Keyakinan Tinggi</span>
+                  </div>
+
+                  <div class="conf-metric-row">
+                    <div class="conf-label-col">
+                      <span class="conf-name text-green"><i class="bi bi-check-circle me-1"></i>Wildtype</span>
+                    </div>
+                    <div class="conf-bar-col">
+                      <div class="progress-track">
+                        <div class="progress-bar-fill fill-wildtype" id="wtBar" style="width: 0%;"></div>
+                      </div>
+                    </div>
+                    <div class="conf-value-col text-green" id="wtConfPct">0%</div>
+                  </div>
+
+                  <div class="conf-metric-row">
+                    <div class="conf-label-col">
+                      <span class="conf-name text-red"><i class="bi bi-virus2 me-1"></i>Mutant</span>
+                    </div>
+                    <div class="conf-bar-col">
+                      <div class="progress-track">
+                        <div class="progress-bar-fill fill-mutant" id="wtMutantBar" style="width: 0%;"></div>
+                      </div>
+                    </div>
+                    <div class="conf-value-col text-red" id="wtMutantPct">0%</div>
+                  </div>
+                </div>
+
+                <div class="details-table mt-3">
+                  <div class="dt-row">
+                    <span class="dt-key">Arsitektur Model</span>
+                    <span class="dt-val">Swin-Transformer (Hierarchical Vision)</span>
+                  </div>
+                  <div class="dt-row">
+                    <span class="dt-key">Format Masukan</span>
+                    <span class="dt-val" id="wtMode">&mdash;</span>
+                  </div>
+                  <div class="dt-row">
+                    <span class="dt-key">Waktu Komputasi</span>
+                    <span class="dt-val font-mono" id="wtTime">&mdash;</span>
+                  </div>
+                  <div class="dt-row">
+                    <span class="dt-key">Referensi Standar</span>
+                    <span class="dt-val">The Cancer Genome Atlas (TCGA-LUAD)</span>
+                  </div>
+                  <div class="dt-row">
+                    <span class="dt-key">Waktu Pengujian</span>
+                    <span class="dt-val font-mono" id="wtDate">&mdash;</span>
+                  </div>
+                </div>
+
+                <div class="result-actions-row mt-4">
+                  <button class="btn btn-outline-med flex-fill" onclick="downloadResult('wildtype')" type="button">
+                    <i class="bi bi-download me-1"></i> Unduh Laporan (.TXT)
+                  </button>
+                  <button class="btn btn-primary-med flex-fill" onclick="resetAll()" type="button">
+                    <i class="bi bi-plus-lg me-1"></i> Analisis Baru
+                  </button>
+                </div>
+
+                <div class="clinical-note-box mt-3">
+                  <i class="bi bi-shield-fill-exclamation text-amber me-2"></i>
+                  <span><strong>Catatan Medis:</strong> Hasil interpretasi AI ini ditujukan untuk konfirmasi riset patologi dan memerlukan verifikasi oleh dokter spesialis patologi anatomi.</span>
+                </div>
+
+              </div><!-- /resultWildtype -->
+
+              <!-- ── E. RESULT: INVALID / NON TCGA-LUAD ── -->
+              <div class="result-state d-none" id="resultInvalid">
+                <div class="verdict-banner verdict-invalid">
+                  <div class="verdict-left">
+                    <div class="verdict-kicker text-amber">VERIFIKASI SPESIMEN GAGAL</div>
+                    <h2 class="verdict-title text-amber">
+                      <i class="bi bi-exclamation-octagon-fill me-2"></i>Bukan TCGA-LUAD
+                    </h2>
+                    <p class="verdict-desc">
+                      Citra yang diupload tidak memenuhi karakteristik visual mikroskopis preparat histopatologi adenokarsinoma paru (TCGA-LUAD).
+                    </p>
+                  </div>
+                  <div class="verdict-stamp stamp-invalid">
+                    <div class="stamp-icon"><i class="bi bi-x-circle-fill"></i></div>
+                    <div class="stamp-text">TIDAK VALID</div>
+                  </div>
+                </div>
+
+                <div class="invalid-details-box mt-3">
+                  <div class="idb-title"><i class="bi bi-list-check me-1"></i> Pemeriksaan Kriteria Validasi:</div>
+                  <ul class="idb-list mb-0">
+                    <li>Pewarnaan jaringan bukan Hematoxylin &amp; Eosin (H&amp;E) standar.</li>
+                    <li>Struktur jaringan bukan parenkim paru-paru adenokarsinoma.</li>
+                    <li>Resolusi atau kualitas citra terlalu rendah / artefak gambar non-medis.</li>
+                  </ul>
+                </div>
+
+                <div class="reupload-suggestion mt-3">
+                  <i class="bi bi-lightbulb-fill text-primary-cyan me-2 flex-shrink-0"></i>
+                  <span><strong>Saran Klinis:</strong> Pastikan Anda mengupload slide patch berukuran 224&times;224 px yang diekstraksi dari Whole Slide Image dataset TCGA-LUAD dengan pewarnaan H&amp;E.</span>
+                </div>
+
+                <div class="result-actions-row mt-4">
+                  <button class="btn btn-primary-med flex-fill" onclick="triggerReupload()" type="button">
+                    <i class="bi bi-arrow-repeat me-1"></i> Upload Ulang Spesimen
+                  </button>
+                  <button class="btn btn-outline-med" onclick="resetAll()" type="button">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i> Reset Form
+                  </button>
+                </div>
+              </div><!-- /resultInvalid -->
+
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /row -->
+    </div>
+  </section>
+
+  <!-- ===== CLINICAL WORKFLOW SECTION ===== -->
+  <section class="section-workflow" id="how-it-works">
+    <div class="container-xl">
+      <div class="text-center max-w-700 mx-auto mb-5">
+        <span class="section-kicker">Standar Operasional</span>
+        <h2 class="section-heading">Alur Kerja Sistem Deteksi LUAD</h2>
+        <p class="section-sub">Pipeline otomatis dari penerimaan citra mikroskopis hingga penyusunan laporan klasifikasi genetik.</p>
+      </div>
+
+      <div class="row g-4">
+        <div class="col-md-6 col-lg-3">
+          <div class="workflow-card how-step-card">
+            <div class="wf-step-number">01</div>
+            <div class="wf-icon-wrap"><i class="bi bi-cloud-arrow-up-fill"></i></div>
+            <h4 class="wf-title">Input Spesimen</h4>
+            <p class="wf-desc">Penerimaan citra slide jaringan biopsi berformat patch 224&times;224 px atau Whole Slide Image (WSI) beresolusi gigapixel.</p>
+          </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
+          <div class="workflow-card how-step-card">
+            <div class="wf-step-number">02</div>
+            <div class="wf-icon-wrap"><i class="bi bi-check2-circle"></i></div>
+            <h4 class="wf-title">Validasi Karakteristik</h4>
+            <p class="wf-desc">Sistem memverifikasi integritas pewarnaan H&amp;E serta memastikan spesimen bersesuaian dengan standar jaringan paru TCGA-LUAD.</p>
+          </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
+          <div class="workflow-card how-step-card">
+            <div class="wf-step-number">03</div>
+            <div class="wf-icon-wrap"><i class="bi bi-cpu-fill"></i></div>
+            <h4 class="wf-title">Inferensi Swin-T</h4>
+            <p class="wf-desc">Model Swin-Transformer mengekstraksi representasi hierarkis seluler untuk mendeteksi tanda mutasi genetik secara kuantitatif.</p>
+          </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
+          <div class="workflow-card how-step-card">
+            <div class="wf-step-number">04</div>
+            <div class="wf-icon-wrap"><i class="bi bi-clipboard2-check-fill"></i></div>
+            <h4 class="wf-title">Laporan Patologi</h4>
+            <p class="wf-desc">Penyusunan resume hasil prediksi dengan skor probabilitas terkalibrasi yang dapat diunduh langsung untuk arsip riset medis.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== GENE CLASSES EXPLANATION ===== -->
+  <section class="section-classes" id="classes">
+    <div class="container-xl">
+      <div class="text-center max-w-700 mx-auto mb-5">
+        <span class="section-kicker">Taksonomi Diagnostik</span>
+        <h2 class="section-heading">Kategori Klasifikasi Mutasi</h2>
+        <p class="section-sub">Pemahaman biologis dan patologis dari setiap hasil klasifikasi yang dihasilkan oleh sistem.</p>
+      </div>
+
+      <div class="row g-4 justify-content-center">
+        
+        <!-- Mutant -->
+        <div class="col-md-6 col-lg-4">
+          <div class="category-card class-info-card cat-mutant">
+            <div class="cat-icon-badge icon-mutant">
+              <i class="bi bi-virus2"></i>
+            </div>
+            <span class="cat-status text-red">MUTASI TERDETEKSI</span>
+            <h3 class="cat-heading">Mutant (KRAS / TP53)</h3>
+            <p class="cat-text">
+              Spesimen menunjukkan atypia nuklear dan pola morfologi histologis yang berasosiasi kuat dengan mutasi onkogen KRAS atau gen supresor tumor TP53 pada adenokarsinoma paru.
+            </p>
+            <div class="cat-footer-badge badge-mutant-pill">
+              <i class="bi bi-exclamation-circle me-1"></i> Onkogenik Positif
+            </div>
+          </div>
+        </div>
+
+        <!-- Wildtype -->
+        <div class="col-md-6 col-lg-4">
+          <div class="category-card class-info-card cat-wildtype">
+            <div class="cat-icon-badge icon-wildtype">
+              <i class="bi bi-check-circle-fill"></i>
+            </div>
+            <span class="cat-status text-green">PROFIL ALAMI</span>
+            <h3 class="cat-heading">Wildtype (Normal)</h3>
+            <p class="cat-text">
+              Tidak ditemukan penanda mutasi onkogen target. Arsitektur jaringan berada dalam kategori status genomik non-mutan pada seri perbandingan TCGA-LUAD.
+            </p>
+            <div class="cat-footer-badge badge-wildtype-pill">
+              <i class="bi bi-check2-circle me-1"></i> Mutasi Negatif
+            </div>
+          </div>
+        </div>
+
+        <!-- Non TCGA -->
+        <div class="col-md-6 col-lg-4">
+          <div class="category-card class-info-card cat-invalid">
+            <div class="cat-icon-badge icon-invalid">
+              <i class="bi bi-shield-x"></i>
+            </div>
+            <span class="cat-status text-amber">DI LUAR DOMAIN</span>
+            <h3 class="cat-heading">Non TCGA-LUAD</h3>
+            <p class="cat-text">
+              Citra masukan berada di luar distribusi dataset rujukan (bukan slide histopatologi adenokarsinoma paru berpewarnaan H&amp;E), sehingga model menolak melakukan prediksi palsu.
+            </p>
+            <div class="cat-footer-badge badge-invalid-pill">
+              <i class="bi bi-x-circle me-1"></i> Sampel Invalid
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== MINIMAL CLINICAL FOOTER ===== -->
+  <footer class="clinical-footer">
+    <div class="container-xl">
+      <div class="row align-items-center g-4 pb-4 border-bottom border-secondary-subtle">
+        
+        <div class="col-md-5">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <div class="footer-brand-sym">
+              <i class="bi bi-lungs-fill"></i>
+            </div>
+            <div>
+              <div class="footer-title">Deteksi <span class="text-primary-cyan">LUAD</span></div>
+              <div class="footer-sub">Sistem Analisis Histopatologi Berbasis AI</div>
+            </div>
+          </div>
+          <p class="footer-desc mb-0">
+            Aplikasi pendukung riset patologi molekuler untuk deteksi mutasi genetik pada kanker paru adenokarsinoma menggunakan model deep learning Swin-Transformer.
+          </p>
+        </div>
+
+        <div class="col-md-4 text-md-center">
+          <div class="footer-nav-links">
+            <a href="#overview">Ikhtisar</a>
+            <a href="#predictor">Analisis</a>
+            <a href="#how-it-works">Alur Prosedur</a>
+            <a href="#classes">Kategori Gen</a>
+          </div>
+        </div>
+
+        <div class="col-md-3 text-md-end">
+          <div class="footer-dataset-box">
+            <span class="fdb-label">Dataset Referensi:</span>
+            <span class="fdb-val">TCGA-LUAD (NCI / NIH)</span>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="row align-items-center pt-3 g-2">
+        <div class="col-md-7">
+          <div class="footer-legal-text">
+            <i class="bi bi-info-circle me-1 text-primary-cyan"></i>
+            <strong>Peringatan Medis:</strong> Platform ini diperuntukkan semata-mata untuk tujuan penelitian dan validasi ilmiah. Hasil komputasi AI bukan merupakan diagnosis klinis pengganti dokter spesialis patologi.
+          </div>
+        </div>
+        <div class="col-md-5 text-md-end">
+          <div class="copyright-text">
+            &copy; 2024 Deteksi LUAD &bull; Onkologi &amp; Patologi Digital
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Application Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
