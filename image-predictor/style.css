@@ -899,6 +899,24 @@ a:hover {
   font-weight: 600;
 }
 
+/* sib-chip: inline validation chip in file status strip */
+.sib-chip {
+  font-size: 0.72rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-light);
+  background: #f8fafc;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.sib-valid {
+  background-color: var(--wildtype-bg);
+  color: var(--wildtype-green);
+  border-color: var(--wildtype-border);
+  font-weight: 600;
+}
+
 .btn-remove-file {
   background: transparent;
   border: none;
@@ -1936,4 +1954,207 @@ a:hover {
     width: 110px;
     font-size: 0.75rem;
   }
+}
+
+/* ==========================================================================
+   16. Preprocessing Status Panel
+   ========================================================================== */
+
+.preproc-status-panel {
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border-light);
+  padding: 0.9rem 1rem;
+  transition: border-color var(--trans-normal), background var(--trans-normal);
+}
+
+.preproc-status-panel.preproc-ready {
+  background: var(--wildtype-bg);
+  border-color: var(--wildtype-border);
+}
+
+.preproc-status-panel.preproc-needed {
+  background: var(--amber-bg);
+  border-color: var(--amber-border);
+}
+
+.preproc-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.preproc-icon-wrap {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+.preproc-ready .preproc-icon-wrap {
+  background: var(--wildtype-green);
+  color: #fff;
+}
+
+.preproc-needed .preproc-icon-wrap {
+  background: var(--amber-warning);
+  color: #fff;
+}
+
+.preproc-text-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.preproc-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.2rem;
+}
+
+.preproc-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.preproc-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+
+.badge-preproc-ok {
+  background: var(--wildtype-green);
+  color: #fff;
+}
+
+.badge-preproc-warn {
+  background: var(--amber-warning);
+  color: #fff;
+}
+
+.preproc-detail {
+  font-size: 0.77rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.preproc-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+.pstat-item {
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--radius-pill);
+  background: rgba(15, 23, 42, 0.06);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  font-family: var(--font-mono);
+}
+
+/* Pipeline steps update — handled by existing rules above */
+
+/* Confidence badge variants */
+.badge-conf-high {
+  background: var(--wildtype-green);
+  color: #fff;
+  font-size: 0.72rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+}
+
+.badge-conf-med {
+  background: var(--amber-warning);
+  color: #fff;
+  font-size: 0.72rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+}
+
+.badge-conf-low {
+  background: #64748b;
+  color: #fff;
+  font-size: 0.72rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+}
+
+/* lps-item alias for pipeline-item (backward compat) */
+.lps-item { } /* kept for JS backward compat if needed */
+
+/* Preset Chips for Quick Testing from Model.ipynb */
+.preset-samples-wrap {
+  border-color: rgba(226, 232, 240, 0.8) !important;
+}
+
+.preset-title-text {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.preset-count-text {
+  font-size: 0.70rem;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+}
+
+.preset-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  padding: 0.22rem 0.55rem;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all var(--trans-fast);
+  user-select: none;
+}
+
+.preset-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+}
+
+.preset-chip-mut {
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--mutant-red);
+  border-color: rgba(239, 68, 68, 0.22);
+  font-weight: 600;
+}
+
+.preset-chip-mut:hover, .preset-chip-mut.active {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: var(--mutant-red);
+  color: #991b1b;
+}
+
+.preset-chip-wt {
+  background: rgba(34, 197, 94, 0.08);
+  color: #166534;
+  border-color: rgba(34, 197, 94, 0.22);
+  font-weight: 600;
+}
+
+.preset-chip-wt:hover, .preset-chip-wt.active {
+  background: rgba(34, 197, 94, 0.18);
+  border-color: var(--wildtype-green);
+  color: #14532d;
 }

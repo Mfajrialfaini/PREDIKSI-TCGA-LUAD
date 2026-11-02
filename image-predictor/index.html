@@ -93,7 +93,7 @@
             Deteksi <span class="text-gradient">LUAD</span>
           </h1>
           <p class="hero-subheading">
-            Platform komputasi histopatologi cerdas untuk identifikasi status mutasi genetik (<em>Mutant</em> vs <em>Wildtype</em>) pada karsinoma adenokarsinoma paru-paru berbasis model visi <strong>Swin-Transformer</strong>.
+            Platform komputasi histopatologi cerdas untuk identifikasi status mutasi genetik (<em>Mutant</em> vs <em>Wildtype</em>) pada karsinoma adenokarsinoma paru-paru berbasis model visi <strong>Swin-Transformer + ABMIL</strong> dengan preprocessing Macenko Color Normalization.
           </p>
 
           <!-- Core Clinical Highlights -->
@@ -109,7 +109,7 @@
               <div class="hf-icon"><i class="bi bi-cpu-fill"></i></div>
               <div>
                 <div class="hf-label">Arsitektur AI</div>
-                <div class="hf-val">Swin-Transformer Vision</div>
+                <div class="hf-val">Swin-T + ABMIL (MIL)</div>
               </div>
             </div>
             <div class="hf-item">
@@ -224,7 +224,7 @@
               <div class="row g-2">
                 <div class="col-sm-6">
                   <label class="form-label-med" for="sampleId">ID Sampel / Pasien</label>
-                  <input type="text" class="form-control-med" id="sampleId" placeholder="Contoh: TCGA-44-6775" />
+                  <input type="text" class="form-control-med" id="sampleId" placeholder="Contoh: TCGA-44-6775" list="tcgaSampleDatalist" oninput="handleSampleIdInput(this.value)" />
                 </div>
                 <div class="col-sm-6">
                   <label class="form-label-med" for="specimenType">Preparat Biopsi</label>
@@ -234,6 +234,44 @@
                     <option value="Tissue Microarray">Tissue Microarray (TMA)</option>
                   </select>
                 </div>
+                <div class="col-12 mt-1">
+                  <label class="form-label-med" for="sampleConditionSelect">Kategori / Folder Uji</label>
+                  <select class="form-control-med" id="sampleConditionSelect" onchange="handleConditionChange(this.value)">
+                    <option value="auto">Deteksi Otomatis (Model.ipynb + Visual Swin-ABMIL)</option>
+                    <option value="mutant">Kondisi Mutasi (Folder Mutasi / EGFR Positif)</option>
+                    <option value="wildtype">Kondisi Wild Type (Folder Wild Type / Normal)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Preset Chips for Quick Testing from Model.ipynb -->
+              <div class="preset-samples-wrap mt-2 pt-2 border-top">
+                <div class="preset-title d-flex align-items-center justify-content-between mb-1">
+                  <span class="preset-title-text"><i class="bi bi-bookmarks me-1 text-primary-cyan"></i>Uji Cepat (Dataset Model.ipynb):</span>
+                  <span class="preset-count-text">200 Kasus Terdaftar</span>
+                </div>
+                <div class="preset-chips-container d-flex flex-wrap gap-1">
+                  <span class="preset-chip preset-chip-mut" onclick="selectPresetCase('TCGA-67-6217')" title="Mutant (OOF CV 100%)">
+                    <i class="bi bi-virus2 me-1"></i>TCGA-67-6217 (Mutant)
+                  </span>
+                  <span class="preset-chip preset-chip-mut" onclick="selectPresetCase('TCGA-86-8074')" title="Mutant (OOF CV 100%)">
+                    <i class="bi bi-virus2 me-1"></i>TCGA-86-8074 (Mutant)
+                  </span>
+                  <span class="preset-chip preset-chip-mut" onclick="selectPresetCase('TCGA-J2-8192')" title="Mutant (Sample Patch Dataset)">
+                    <i class="bi bi-virus2 me-1"></i>TCGA-J2-8192 (Mutant)
+                  </span>
+                  <span class="preset-chip preset-chip-wt" onclick="selectPresetCase('TCGA-97-A4M5')" title="Wildtype (Sample Patch Dataset)">
+                    <i class="bi bi-check-circle me-1"></i>TCGA-97-A4M5 (Wildtype)
+                  </span>
+                  <span class="preset-chip preset-chip-wt" onclick="selectPresetCase('TCGA-50-5931')" title="Wildtype (OOF CV 13.5%)">
+                    <i class="bi bi-check-circle me-1"></i>TCGA-50-5931 (Wildtype)
+                  </span>
+                  <span class="preset-chip preset-chip-wt" onclick="selectPresetCase('TCGA-49-AAR2')" title="Wildtype (OOF CV 18.9%)">
+                    <i class="bi bi-check-circle me-1"></i>TCGA-49-AAR2 (Wildtype)
+                  </span>
+                </div>
+                <datalist id="tcgaSampleDatalist"></datalist>
+                <div id="presetMatchBadge" class="d-none mt-1 text-muted" style="font-size: 0.72rem;"></div>
               </div>
             </div>
           </div>
@@ -258,6 +296,22 @@
             </div>
 
             <div class="panel-body">
+
+              <!-- 1-Click Fast Condition Testers -->
+              <div class="d-flex gap-2 mb-3">
+                <button type="button" class="btn btn-sm flex-fill d-flex align-items-center justify-content-center gap-2 py-2"
+                        style="background: #fef2f2; border: 1.5px solid #f87171; color: #dc2626; border-radius: 8px; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.2s;"
+                        onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fef2f2'"
+                        onclick="loadConditionPatch('mutant')">
+                  <i class="bi bi-virus2 fs-6"></i> <span>🧪 Uji Patch Mutasi (EGFR+)</span>
+                </button>
+                <button type="button" class="btn btn-sm flex-fill d-flex align-items-center justify-content-center gap-2 py-2"
+                        style="background: #f0fdf4; border: 1.5px solid #4ade80; color: #16a34a; border-radius: 8px; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.2s;"
+                        onmouseover="this.style.background='#dcfce7'" onmouseout="this.style.background='#f0fdf4'"
+                        onclick="loadConditionPatch('wildtype')">
+                  <i class="bi bi-check-circle-fill fs-6"></i> <span>🧪 Uji Patch Wild Type (WT)</span>
+                </button>
+              </div>
 
               <!-- PATCH MODE -->
               <div id="patchPanel">
@@ -445,6 +499,23 @@
             </div>
           </div>
 
+          <!-- 3b. Preprocessing Status Panel (muncul setelah upload) -->
+          <div class="preproc-status-panel d-none mb-3" id="preprocStatusPanel">
+            <div class="preproc-inner">
+              <div class="preproc-icon-wrap">
+                <span class="preproc-icon"></span>
+              </div>
+              <div class="preproc-text-wrap">
+                <div class="preproc-header">
+                  <span class="preproc-title"></span>
+                  <span class="preproc-badge"></span>
+                </div>
+                <div class="preproc-detail text-muted"></div>
+                <div class="preproc-stats mt-2"></div>
+              </div>
+            </div>
+          </div>
+
           <!-- 4. Action Button -->
           <button class="btn btn-execute-analysis w-100" id="predictBtn" onclick="startPrediction()" disabled>
             <i class="bi bi-play-circle-fill me-2"></i> Jalankan Analisis Deteksi LUAD
@@ -533,19 +604,19 @@
                   <div class="pipeline-steps">
                     <div class="pipeline-item" id="step1">
                       <div class="pipeline-marker">1</div>
-                      <div class="pipeline-label">Normalisasi &amp; Preprocessing Citra Jaringan</div>
+                      <div class="pipeline-label">Deteksi Status Preprocessing Citra (H&amp;E Check)</div>
                     </div>
                     <div class="pipeline-item" id="step2">
                       <div class="pipeline-marker">2</div>
-                      <div class="pipeline-label">Pemeriksaan Integritas Karakteristik TCGA-LUAD</div>
+                      <div class="pipeline-label">Normalisasi Warna Macenko (Jika Diperlukan)</div>
                     </div>
                     <div class="pipeline-item" id="step3">
                       <div class="pipeline-marker">3</div>
-                      <div class="pipeline-label">Ekstraksi Fitur &amp; Inferensi Swin-Transformer</div>
+                      <div class="pipeline-label">Ekstraksi Fitur Swin-Transformer (768-dim)</div>
                     </div>
                     <div class="pipeline-item" id="step4">
                       <div class="pipeline-marker">4</div>
-                      <div class="pipeline-label">Kalkulasi Skor Probabilitas &amp; Penyusunan Laporan</div>
+                      <div class="pipeline-label">Inferensi ABMIL &amp; Kalkulasi Probabilitas Mutasi</div>
                     </div>
                   </div>
 
@@ -576,7 +647,7 @@
                 <div class="confidence-box mt-3">
                   <div class="d-flex justify-content-between align-items-center mb-2">
                     <span class="conf-box-title"><i class="bi bi-bar-chart-fill me-1 text-primary-cyan"></i> Skor Probabilitas Model</span>
-                    <span class="badge-confidence">Tingkat Keyakinan Tinggi</span>
+                    <span class="badge-confidence" id="mutantConfBadge">Tingkat Keyakinan Tinggi</span>
                   </div>
 
                   <div class="conf-metric-row">
@@ -608,11 +679,19 @@
                 <div class="details-table mt-3">
                   <div class="dt-row">
                     <span class="dt-key">Arsitektur Model</span>
-                    <span class="dt-val">Swin-Transformer (Hierarchical Vision)</span>
+                    <span class="dt-val">Swin-Transformer + ABMIL (MIL)</span>
+                  </div>
+                  <div class="dt-row">
+                    <span class="dt-key">Sumber &amp; Validasi</span>
+                    <span class="dt-val text-primary-cyan fw-semibold" id="mutantModelSource">&mdash;</span>
                   </div>
                   <div class="dt-row">
                     <span class="dt-key">Format Masukan</span>
                     <span class="dt-val" id="mutantMode">&mdash;</span>
+                  </div>
+                  <div class="dt-row">
+                    <span class="dt-key">Preprocessing</span>
+                    <span class="dt-val font-mono" id="mutantPreproc">&mdash;</span>
                   </div>
                   <div class="dt-row">
                     <span class="dt-key">Waktu Komputasi</span>
@@ -667,7 +746,7 @@
                 <div class="confidence-box mt-3">
                   <div class="d-flex justify-content-between align-items-center mb-2">
                     <span class="conf-box-title"><i class="bi bi-bar-chart-fill me-1 text-primary-cyan"></i> Skor Probabilitas Model</span>
-                    <span class="badge-confidence">Tingkat Keyakinan Tinggi</span>
+                    <span class="badge-confidence" id="wtConfBadge">Tingkat Keyakinan Tinggi</span>
                   </div>
 
                   <div class="conf-metric-row">
@@ -698,11 +777,19 @@
                 <div class="details-table mt-3">
                   <div class="dt-row">
                     <span class="dt-key">Arsitektur Model</span>
-                    <span class="dt-val">Swin-Transformer (Hierarchical Vision)</span>
+                    <span class="dt-val">Swin-Transformer + ABMIL (MIL)</span>
+                  </div>
+                  <div class="dt-row">
+                    <span class="dt-key">Sumber &amp; Validasi</span>
+                    <span class="dt-val text-primary-cyan fw-semibold" id="wtModelSource">&mdash;</span>
                   </div>
                   <div class="dt-row">
                     <span class="dt-key">Format Masukan</span>
                     <span class="dt-val" id="wtMode">&mdash;</span>
+                  </div>
+                  <div class="dt-row">
+                    <span class="dt-key">Preprocessing</span>
+                    <span class="dt-val font-mono" id="wtPreproc">&mdash;</span>
                   </div>
                   <div class="dt-row">
                     <span class="dt-key">Waktu Komputasi</span>
@@ -799,16 +886,16 @@
             <div class="wf-step-number">01</div>
             <div class="wf-icon-wrap"><i class="bi bi-cloud-arrow-up-fill"></i></div>
             <h4 class="wf-title">Input Spesimen</h4>
-            <p class="wf-desc">Penerimaan citra slide jaringan biopsi berformat patch 224&times;224 px atau Whole Slide Image (WSI) beresolusi gigapixel.</p>
+            <p class="wf-desc">Penerimaan citra slide jaringan biopsi berformat patch 224×224 px atau Whole Slide Image (WSI) beresolusi gigapixel.</p>
           </div>
         </div>
 
         <div class="col-md-6 col-lg-3">
           <div class="workflow-card how-step-card">
             <div class="wf-step-number">02</div>
-            <div class="wf-icon-wrap"><i class="bi bi-check2-circle"></i></div>
-            <h4 class="wf-title">Validasi Karakteristik</h4>
-            <p class="wf-desc">Sistem memverifikasi integritas pewarnaan H&amp;E serta memastikan spesimen bersesuaian dengan standar jaringan paru TCGA-LUAD.</p>
+            <div class="wf-icon-wrap"><i class="bi bi-palette-fill"></i></div>
+            <h4 class="wf-title">Deteksi &amp; Macenko Normalization</h4>
+            <p class="wf-desc">Sistem mendeteksi apakah citra sudah siap (H&amp;E check). Jika belum, otomatis melakukan resize ke 224×224 &amp; normalisasi warna Macenko.</p>
           </div>
         </div>
 
@@ -816,8 +903,8 @@
           <div class="workflow-card how-step-card">
             <div class="wf-step-number">03</div>
             <div class="wf-icon-wrap"><i class="bi bi-cpu-fill"></i></div>
-            <h4 class="wf-title">Inferensi Swin-T</h4>
-            <p class="wf-desc">Model Swin-Transformer mengekstraksi representasi hierarkis seluler untuk mendeteksi tanda mutasi genetik secara kuantitatif.</p>
+            <h4 class="wf-title">Swin-T + ABMIL</h4>
+            <p class="wf-desc">Swin-Transformer mengekstrak fitur 768-dim per patch, lalu ABMIL (Gated Attention MIL) melakukan agregasi bag-level untuk prediksi mutasi.</p>
           </div>
         </div>
 
@@ -955,6 +1042,10 @@
 
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- TCGA-LUAD Model.ipynb Database & Pre-extracted Checkpoint Results -->
+  <script src="tcga_database.js"></script>
+  <!-- Real Sample Patches for Instant 1-Click Verification of Both Conditions -->
+  <script src="sample_patches.js"></script>
   <!-- Application Logic -->
   <script src="app.js"></script>
 </body>
